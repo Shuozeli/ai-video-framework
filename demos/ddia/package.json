@@ -1,0 +1,22 @@
+{
+  "name": "ddia-video",
+  "version": "1.0.0",
+  "description": "Designing Data-Intensive Applications book video",
+  "scripts": {
+    "build": "remotion render DDIAVideo out/ddia-video.mp4 --entry-point src/index.tsx",
+    "preview": "remotion preview --entry-point src/index.tsx"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.448",
+    "@remotion/player": "^4.0.448",
+    "@remotion/zod-types": "^4.0.448",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "remotion": "^4.0.448",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "typescript": "^5.3.0"
+  }
+}

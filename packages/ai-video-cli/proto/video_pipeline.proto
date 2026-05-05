@@ -1,0 +1,346 @@
+syntax = "proto3";
+
+package video_pipeline;
+
+service VideoPipeline {
+  // ===== Workflow Management =====
+  rpc CompileWorkflow(CompileRequest) returns (CompileResponse);
+  rpc GetPipeline(GetPipelineRequest) returns (GetPipelineResponse);
+
+  // ===== Pipeline Execution =====
+  rpc ExecutePipeline(ExecuteRequest) returns (stream ExecuteResponse);
+  rpc CancelPipeline(CancelRequest) returns (CancelResponse);
+
+  // ===== Pipeline Listing =====
+  rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse);
+
+  // ===== Material Management =====
+  rpc UploadMaterial(stream UploadMaterialRequest) returns (UploadMaterialResponse);
+  rpc ListMaterials(ListMaterialsRequest) returns (ListMaterialsResponse);
+  rpc GetMaterial(GetMaterialRequest) returns (stream MaterialData);
+
+  // ===== Templates =====
+  rpc ListTemplates(ListTemplatesRequest) returns (ListTemplatesResponse);
+
+  // ===== Preview / Partial Render =====
+  rpc RenderFrame(RenderFrameRequest) returns (RenderFrameResponse);
+  rpc RenderScene(RenderSceneRequest) returns (stream RenderSceneResponse);
+}
+
+// ============================================
+// Workflow & Pipeline
+// ============================================
+
+message CompileRequest {
+  string name = 1;
+  WorkflowDefinition workflow = 2;
+}
+
+message WorkflowDefinition {
+  VideoMetadata metadata = 1;
+  Materials materials = 2;
+  repeated Scene scenes = 3;
+  repeated Transition transitions = 4;
+}
+
+message VideoMetadata {
+  string title = 1;
+  double duration_seconds = 2;
+  int32 fps = 3;
+  Resolution resolution = 4;
+  string format = 5;          // "mp4" | "webm"
+  string aspect_ratio = 6;    // "16:9" | "9:16" | "1:1"
+  string primary_lang = 7;    // "zh" | "en"
+}
+
+message Resolution {
+  int32 width = 1;
+  int32 height = 2;
+}
+
+message Materials {
+  // Each value is a JSON string. data values are arbitrary JSON;
+  // images / audio values are storage paths.
+  map<string, string> data_json = 1;
+  map<string, string> images = 2;
+  map<string, string> audio = 3;
+}
+
+message Scene {
+  string name = 1;
+  double duration_seconds = 2;
+  AudioBlock audio = 3;
+  Background background = 4;
+  repeated Layer layers = 5;
+}
+
+message AudioBlock {
+  string text = 1;                              // primary-lang text
+  string audio_ref = 2;                         // optional pre-recorded
+  VoiceSetting voice = 3;
+  map<string, AudioAlternate> alternates = 4;   // key: lang code
+}
+
+message AudioAlternate {
+  string text = 1;
+  VoiceSetting voice = 2;
+}
+
+message VoiceSetting {
+  string voice_id = 1;
+  float speed = 2;
+  float vol = 3;
+  int32 pitch = 4;
+  string emotion = 5;
+}
+
+message Background {
+  string kind = 1;        // "solid" | "gradient" | "image"
+  string color = 2;
+  string color2 = 3;
+  string image_ref = 4;
+  float blur = 5;
+}
+
+message Layer {
+  string id = 1;
+  string template = 2;          // template name (registry key)
+  int32 from_frame = 3;
+  int32 duration_frames = 4;    // 0 = until end of scene
+  int32 z_index = 5;
+  Animation enter = 6;
+  Animation exit = 7;
+  string props_json = 8;        // JSON-serialized template props (validated by registry, not by proto)
+}
+
+message Animation {
+  string type = 1;
+  int32 duration_frames = 2;
+  string direction = 3;
+  string easing = 4;
+}
+
+message Transition {
+  string from = 1;
+  string to = 2;
+  string kind = 3;          // "fade" | "slide" | "wipe" | "none"
+  int32 duration_frames = 4;
+  string direction = 5;
+  string easing = 6;
+}
+
+message CompileResponse {
+  string pipeline_id = 1;
+  Pipeline pipeline = 2;
+}
+
+message Pipeline {
+  string pipeline_id = 1;
+  VideoMetadata metadata = 2;
+  Materials materials = 3;
+  repeated PipelineScene scenes = 4;
+  repeated Transition transitions = 5;
+  int32 total_frames = 6;
+}
+
+message PipelineScene {
+  string name = 1;
+  int32 start_frame = 2;
+  int32 duration_frames = 3;
+  Background background = 4;
+  repeated Layer layers = 5;
+  map<string, AudioTask> audio_tasks = 6;   // key: lang code
+  RenderTask render_task = 7;
+}
+
+message AudioTask {
+  string task_id = 1;
+  string content_hash = 2;
+  string lang = 3;
+  string scene_name = 4;
+  string text = 5;
+  VoiceSetting voice = 6;
+  string output_path = 7;
+}
+
+message RenderTask {
+  string task_id = 1;
+  string content_hash = 2;
+  string scene_name = 3;
+  int32 start_frame = 4;
+  int32 duration_frames = 5;
+}
+
+// ============================================
+// Execution
+// ============================================
+
+message ExecuteRequest {
+  string pipeline_id = 1;
+  ExecuteOptions options = 2;
+}
+
+message ExecuteOptions {
+  bool generate_audio = 1;
+  bool generate_video = 2;
+  string output_path = 3;
+  string lang = 4;          // optional; defaults to metadata.primary_lang
+  // Which outputs to produce. Possible values: "mp4", "manifest", "snapshot".
+  // Default (empty) = ["mp4"].  Files are written next to output_path with
+  // suffixes: .mp4 / .manifest.yaml / .snapshot.yaml
+  repeated string outputs = 5;
+}
+
+message ExecuteResponse {
+  string pipeline_id = 1;
+  PipelineStatus status = 2;
+  string current_scene = 3;
+  int32 progress_percent = 4;
+  AudioResult audio_result = 5;
+  string video_path = 6;
+  string error_message = 7;
+}
+
+message AudioResult {
+  string scene_name = 1;
+  string lang = 2;
+  string audio_path = 3;
+  int32 audio_length_ms = 4;
+}
+
+enum PipelineStatus {
+  PENDING = 0;
+  COMPILING = 1;
+  GENERATING_AUDIO = 2;
+  RENDERING = 3;
+  COMPLETED = 4;
+  FAILED = 5;
+  CANCELLED = 6;
+}
+
+message GetPipelineRequest {
+  string pipeline_id = 1;
+}
+
+message GetPipelineResponse {
+  Pipeline pipeline = 1;
+}
+
+message CancelRequest {
+  string pipeline_id = 1;
+}
+
+message CancelResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ListPipelinesRequest {}
+
+message ListPipelinesResponse {
+  repeated PipelineSummary pipelines = 1;
+}
+
+message PipelineSummary {
+  string pipeline_id = 1;
+  string title = 2;
+  PipelineStatus status = 3;
+  int32 progress_percent = 4;
+  int64 created_at = 5;
+}
+
+// ============================================
+// Templates
+// ============================================
+
+message ListTemplatesRequest {}
+
+message ListTemplatesResponse {
+  repeated TemplateInfo templates = 1;
+}
+
+message TemplateInfo {
+  string name = 1;
+  string tier = 2;            // "narrative" | "data" | "logic" | "decoration"
+  string schema_json = 3;     // JSON Schema string (zod-to-json-schema)
+  string description = 4;
+}
+
+// ============================================
+// Preview / Partial Render
+// ============================================
+
+message RenderFrameRequest {
+  string pipeline_id = 1;
+  int32 frame = 2;
+  string format = 3;          // "png" | "jpeg"; default "png"
+  string lang = 4;            // optional
+}
+
+message RenderFrameResponse {
+  bytes image_data = 1;
+  string format = 2;
+}
+
+message RenderSceneRequest {
+  string pipeline_id = 1;
+  string scene_name = 2;
+  string output_path = 3;
+  string lang = 4;
+}
+
+message RenderSceneResponse {
+  PipelineStatus status = 1;
+  int32 progress_percent = 2;
+  string video_path = 3;
+  string error_message = 4;
+}
+
+// ============================================
+// Material Management
+// ============================================
+
+message UploadMaterialRequest {
+  oneof data {
+    MaterialMetadata metadata = 1;
+    bytes chunk = 2;
+  }
+}
+
+message MaterialMetadata {
+  string name = 1;
+  string material_type = 2;     // "audio" | "image" | "data" | "video"
+  string project_name = 3;
+}
+
+message UploadMaterialResponse {
+  string material_id = 1;
+  string path = 2;
+}
+
+message ListMaterialsRequest {
+  string project_name = 1;
+  string material_type = 2;
+}
+
+message ListMaterialsResponse {
+  repeated MaterialSummary materials = 1;
+}
+
+message MaterialSummary {
+  string material_id = 1;
+  string name = 2;
+  string material_type = 3;
+  int64 size_bytes = 4;
+  int64 created_at = 5;
+}
+
+message GetMaterialRequest {
+  string material_id = 1;
+}
+
+message MaterialData {
+  string material_id = 1;
+  bytes chunk = 2;
+  bool is_last = 3;
+}

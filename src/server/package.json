@@ -1,0 +1,31 @@
+{
+  "name": "@ai-video/server",
+  "version": "0.1.0",
+  "description": "AI Video Framework gRPC Server",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "proto:generate": "proto-loader-gen-types --proto ./proto/video_pipeline.proto --out ./proto/types.js"
+  },
+  "dependencies": {
+    "@ai-video/dsl": "link:../../packages/ai-video-dsl",
+    "@ai-video/templates": "link:../../packages/ai-video-templates",
+    "@grpc/grpc-js": "^1.12.6",
+    "@grpc/proto-loader": "^0.7.13",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "grpc-tools": "^1.12.4",
+    "grpc_tools_node_protoc_ts": "^2.2.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

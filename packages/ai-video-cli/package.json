@@ -1,0 +1,25 @@
+{
+  "name": "@ai-video/cli",
+  "version": "0.1.0",
+  "description": "CLI client for AI Video Pipeline Framework",
+  "type": "module",
+  "bin": {
+    "ai-video": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "prepublishOnly": "tsc"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.12.6",
+    "@grpc/proto-loader": "^0.7.13",
+    "@ai-video/dsl": "link:../ai-video-dsl",
+    "commander": "^12.1.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "typescript": "^5.9.3"
+  }
+}

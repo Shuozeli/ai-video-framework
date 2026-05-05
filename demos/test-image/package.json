@@ -1,0 +1,24 @@
+{
+  "name": "test-image",
+  "version": "1.0.0",
+  "description": "Test image capabilities in Remotion",
+  "scripts": {
+    "build": "remotion render ImageTest out/test-image.mp4",
+    "preview": "remotion preview"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.448",
+    "@remotion/lottie": "^4.0.448",
+    "@remotion/player": "^4.0.448",
+    "@remotion/zod-types": "^4.0.448",
+    "lottie-web": "^5.12.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "remotion": "^4.0.448",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "typescript": "^5.3.0"
+  }
+}
