@@ -37,7 +37,7 @@ const SERVER_HOST = process.env.TAILSCALE_IP || process.env.GRPC_HOST || '0.0.0.
 const SERVER_PORT = parseInt(process.env.GRPC_PORT || '50051', 10);
 const STORAGE_PATH = process.env.STORAGE_PATH || path.resolve(process.cwd(), 'storage');
 const TTS_API_KEY = process.env.MINIMAX_API_KEY || '';
-const TTS_BASE_URL = process.env.MINIMAX_BASE_URL || 'https://api.minimax.io';
+const TTS_BASE_URL = process.env.MINIMAX_BASE_URL || 'https://api.minimaxi.com';
 
 // ============================================
 // Proto loading (proto-loader → plain JS objects with camelCased fields)
