@@ -13,6 +13,7 @@ storage/materials/*/
 storage/projects/*/
 test-output/
 demos/*/out/
+out/
 
 # Logs / temp / OS
 *.log

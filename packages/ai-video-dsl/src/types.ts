@@ -127,10 +127,26 @@ export type Transition = z.infer<typeof TransitionSchema>;
 // Materials
 // ============================================
 
+// Sentence-level subtitle timings (e.g. from MiniMax TTS .titles.json).
+// time_begin / time_end are milliseconds, relative to the start of the scene's audio.
+export const SubtitleTimingSchema = z.object({
+  text: z.string(),
+  time_begin: z.number(),
+  time_end: z.number(),
+  pronounce_text: z.string().optional(),
+  text_begin: z.number().optional(),
+  text_end: z.number().optional(),
+  pronounce_text_begin: z.number().optional(),
+  pronounce_text_end: z.number().optional(),
+});
+export type SubtitleTiming = z.infer<typeof SubtitleTimingSchema>;
+
 export const MaterialsSchema = z.object({
   data: z.record(z.string(), z.unknown()).default({}),
   images: z.record(z.string(), z.string()).default({}),
   audio: z.record(z.string(), z.string()).default({}),
+  // key = `${sceneName}:${lang}` (matches materials.audio key format)
+  subtitleTimings: z.record(z.string(), z.array(SubtitleTimingSchema)).default({}),
 });
 export type Materials = z.infer<typeof MaterialsSchema>;
 
@@ -151,7 +167,7 @@ export type VideoMetadata = z.infer<typeof VideoMetadataSchema>;
 
 export const WorkflowSchema = z.object({
   metadata: VideoMetadataSchema,
-  materials: MaterialsSchema.default({ data: {}, images: {}, audio: {} }),
+  materials: MaterialsSchema.default({ data: {}, images: {}, audio: {}, subtitleTimings: {} }),
   scenes: z.array(SceneSchema).min(1),
   transitions: z.array(TransitionSchema).default([]),
 });

@@ -11,10 +11,10 @@ const wf = workflow({
   scenes: [
     scene({
       name: 'intro',
-      duration: 2,
+      duration: 4,
       audio: {
-        text: '这是一个测试视频。',
-        alternates: { en: { text: 'This is a test video.' } },
+        text: '欢迎收看本期财经速递,这里是今天的看点。',
+        alternates: { en: { text: 'Welcome to today\'s finance briefing. Here are the highlights.' } },
       },
       background: { kind: 'gradient', color: '#0a0e27', color2: '#1a2455' },
       layers: [
@@ -22,14 +22,15 @@ const wf = workflow({
           title: '本期看点',
           bullets: ['英伟达财报超预期', '美联储 6 月降息概率上升', '苹果发布会前瞻'],
         }),
+        layer('SubtitleBar', { position: 'bottom' }, { zIndex: 100 }),
       ],
     }),
     scene({
       name: 'outro',
-      duration: 2,
+      duration: 5,
       audio: {
         text: '感谢观看,我们下期再见。',
-        alternates: { en: { text: 'Thanks for watching.' } },
+        alternates: { en: { text: 'Thanks for watching, see you next time.' } },
       },
       layers: [
         layer('MultiDimChart', {
@@ -42,6 +43,7 @@ const wf = workflow({
             { name: 'Others', value: 33, color: '#888888' },
           ],
         }),
+        layer('SubtitleBar', { position: 'bottom' }, { zIndex: 100 }),
       ],
     }),
   ],

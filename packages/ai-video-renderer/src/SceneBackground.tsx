@@ -22,12 +22,16 @@ export const SceneBackground: React.FC<{
     );
   }
   if (bg.kind === 'image' && bg.imageRef) {
-    const path = pipeline.materials.images[bg.imageRef];
-    if (!path) return <AbsoluteFill style={{ backgroundColor: bg.color }} />;
+    const p = pipeline.materials.images[bg.imageRef];
+    if (!p) return <AbsoluteFill style={{ backgroundColor: bg.color }} />;
+    const src =
+      p.startsWith('http://') || p.startsWith('https://') || p.startsWith('file://')
+        ? p
+        : staticFile(p);
     return (
       <AbsoluteFill>
         <Img
-          src={path.startsWith('/') || path.startsWith('http') ? path : staticFile(path)}
+          src={src}
           style={{
             width: '100%',
             height: '100%',

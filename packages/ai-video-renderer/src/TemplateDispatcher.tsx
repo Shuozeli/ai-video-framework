@@ -1,6 +1,6 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
-import type { Layer, Pipeline } from '@ai-video/dsl';
+import type { Layer, Pipeline, PipelineScene } from '@ai-video/dsl';
 import { getTemplate } from '@ai-video/templates';
 
 function resolveRefs(props: Record<string, unknown>, materials: Pipeline['materials']): Record<string, unknown> {
@@ -48,15 +48,29 @@ const ErrorPlaceholder: React.FC<{ message: string }> = ({ message }) => (
   </AbsoluteFill>
 );
 
-export const TemplateDispatcher: React.FC<{ layer: Layer; pipeline: Pipeline }> = ({ layer, pipeline }) => {
+export const TemplateDispatcher: React.FC<{
+  layer: Layer;
+  pipeline: Pipeline;
+  scene: PipelineScene;
+  lang: string;
+}> = ({ layer, pipeline, scene, lang }) => {
   const tpl = getTemplate(layer.type);
   if (!tpl) {
     return <ErrorPlaceholder message={`Unknown template: ${layer.type}`} />;
   }
   const resolved = resolveRefs(layer.props, pipeline.materials);
   const Component = tpl.component;
+  // Inject scene/lang/pipeline so decoration templates (SubtitleBar, etc.) can
+  // look up subtitle timings or other scene-bound data without the user having
+  // to wire it through workflow JSON.
+  const injected = {
+    ...resolved,
+    __scene: scene.name,
+    __lang: lang,
+    __pipeline: pipeline,
+  };
   try {
-    return <Component {...resolved} />;
+    return <Component {...injected} />;
   } catch (err) {
     const message = err instanceof Error ? err.message : 'render error';
     return <ErrorPlaceholder message={`${layer.type}: ${message}`} />;

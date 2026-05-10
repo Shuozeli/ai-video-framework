@@ -39,6 +39,7 @@ function protoToWorkflow(def: any): Workflow {
       data,
       images: { ...(mats.images ?? {}) },
       audio: { ...(mats.audio ?? {}) },
+      subtitleTimings: {},
     },
     scenes: (def.scenes ?? []).map((s: any) => ({
       name: s.name,

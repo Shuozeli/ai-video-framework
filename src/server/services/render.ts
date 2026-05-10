@@ -53,6 +53,46 @@ function writePropsFile(pipeline: Pipeline, lang: Lang | undefined): string {
   return file;
 }
 
+/**
+ * Remotion only accepts http/https URLs or staticFile() paths for <Audio> /
+ * <Img>.  Bare filesystem paths in materials.audio need to be converted to
+ * paths relative to a `--public-dir` we pass to the CLI.  We assume:
+ *   materials.audio[scene:lang] = `${publicDir}/audio/${lang}/${scene}.mp3`
+ *   materials.images.<ref>     = `${publicDir}/<rel>`
+ * Returns { rewrittenPipeline, publicDir? }.
+ */
+function prepareForRender(
+  pipeline: Pipeline,
+): { pipeline: Pipeline; publicDir?: string } {
+  const audioPaths = Object.values(pipeline.materials.audio).filter(
+    (p) => typeof p === 'string' && p.startsWith('/'),
+  );
+  if (audioPaths.length === 0) {
+    return { pipeline };
+  }
+  // pipeline storage dir = parent of audio/<lang>/<scene>.mp3 (pop 3 levels)
+  const publicDir = path.dirname(path.dirname(path.dirname(audioPaths[0])));
+
+  const rewriteIfUnder = (p: string): string =>
+    p.startsWith(publicDir + path.sep) ? path.relative(publicDir, p) : p;
+
+  return {
+    publicDir,
+    pipeline: {
+      ...pipeline,
+      materials: {
+        ...pipeline.materials,
+        audio: Object.fromEntries(
+          Object.entries(pipeline.materials.audio).map(([k, v]) => [k, rewriteIfUnder(v)]),
+        ),
+        images: Object.fromEntries(
+          Object.entries(pipeline.materials.images).map(([k, v]) => [k, rewriteIfUnder(v)]),
+        ),
+      },
+    },
+  };
+}
+
 function codecForFormat(format: 'mp4' | 'webm'): string {
   return format === 'webm' ? 'vp9' : 'h264';
 }
@@ -92,7 +132,8 @@ function runRemotion(args: string[], onProgress?: (p: number) => void): Promise<
 
 export async function renderPipeline(cfg: RenderConfig): Promise<RenderResult> {
   const lang = cfg.lang ?? cfg.pipeline.metadata.primaryLang;
-  const propsFile = writePropsFile(cfg.pipeline, lang);
+  const { pipeline: rewritten, publicDir } = prepareForRender(cfg.pipeline);
+  const propsFile = writePropsFile(rewritten, lang);
   const codec = codecForFormat(cfg.pipeline.metadata.format);
 
   fs.mkdirSync(path.dirname(cfg.outputPath), { recursive: true });
@@ -111,6 +152,7 @@ export async function renderPipeline(cfg: RenderConfig): Promise<RenderResult> {
       String(os.cpus().length),
       '--log',
       'error',
+      ...(publicDir ? ['--public-dir', publicDir] : []),
     ],
     cfg.onProgress,
   );
@@ -125,7 +167,8 @@ export async function renderPipeline(cfg: RenderConfig): Promise<RenderResult> {
 export async function renderStill(cfg: StillConfig): Promise<Buffer> {
   const lang = cfg.lang ?? cfg.pipeline.metadata.primaryLang;
   const format = cfg.format ?? 'png';
-  const propsFile = writePropsFile(cfg.pipeline, lang);
+  const { pipeline: rewritten, publicDir } = prepareForRender(cfg.pipeline);
+  const propsFile = writePropsFile(rewritten, lang);
   const out = path.join(
     os.tmpdir(),
     `ai-video-still-${cfg.pipeline.pipelineId}-${cfg.frame}.${format}`,
@@ -144,6 +187,7 @@ export async function renderStill(cfg: StillConfig): Promise<Buffer> {
     format,
     '--log',
     'error',
+    ...(publicDir ? ['--public-dir', publicDir] : []),
   ]);
 
   const buf = fs.readFileSync(out);

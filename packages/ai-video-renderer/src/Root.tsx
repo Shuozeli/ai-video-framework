@@ -28,7 +28,7 @@ const PLACEHOLDER_PROPS: VideoInputProps = {
     aspectRatio: '16:9',
     primaryLang: 'zh',
   },
-  materials: { data: {}, images: {}, audio: {} },
+  materials: { data: {}, images: {}, audio: {}, subtitleTimings: {} },
   scenes: [],
   transitions: [],
   totalFrames: 1,

@@ -165,6 +165,20 @@ export class PipelineExecutor {
           // Update materials.audio so renderer can find the file via audioRef "<scene>:<lang>"
           pipeline.materials.audio[`${scene.name}:${task.lang}`] = audioResult.audioPath;
 
+          // Populate subtitleTimings from the .titles.json sidecar (written by TTSService)
+          const titlesPath = audioResult.audioPath.replace(/\.mp3$/, '.titles.json');
+          if (fs.existsSync(titlesPath)) {
+            try {
+              const timings = JSON.parse(fs.readFileSync(titlesPath, 'utf-8'));
+              if (Array.isArray(timings) && timings.length > 0) {
+                pipeline.materials.subtitleTimings[`${scene.name}:${task.lang}`] = timings;
+              }
+            } catch (e) {
+              // best-effort; don't fail the pipeline over subtitle parsing
+              console.warn(`Failed to parse subtitle timings at ${titlesPath}:`, e);
+            }
+          }
+
           completed++;
           yield {
             status: PipelineStatus.GENERATING_AUDIO,

@@ -27,6 +27,8 @@ export const Video: React.FC<VideoInputProps> = (pipeline) => {
     return <AbsoluteFill style={{ backgroundColor: '#000' }} />;
   }
 
+  const lang = pipeline._lang ?? pipeline.metadata.primaryLang;
+
   const transitionsByFrom = new Map<string, Transition>(
     (pipeline.transitions ?? []).map((t) => [t.from, t]),
   );
@@ -39,7 +41,7 @@ export const Video: React.FC<VideoInputProps> = (pipeline) => {
         key={scene.name}
         durationInFrames={scene.durationFrames}
       >
-        <SceneRoot scene={scene} pipeline={pipeline} />
+        <SceneRoot scene={scene} pipeline={pipeline} lang={lang} />
       </TransitionSeries.Sequence>,
     );
 

@@ -1,6 +1,7 @@
 // Side-effect imports populate the registry
 import './templates/key-takeaways';
 import './templates/multi-dim-chart';
+import './templates/subtitle-bar';
 
 export {
   registerTemplate,
