@@ -7,21 +7,9 @@ on:
     branches: [main]
 
 jobs:
-  packages:
-    name: Packages
+  build:
+    name: Build all packages
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        # Build order matters: dsl is a peer of all others via link: deps,
-        # but each install resolves its own link, so order is for diagnostic
-        # clarity, not correctness.
-        package:
-          - packages/ai-video-dsl
-          - packages/ai-video-templates
-          - packages/ai-video-renderer
-          - packages/ai-video-cli
-          - src/server
     steps:
       - uses: actions/checkout@v4
 
@@ -32,15 +20,29 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
-          cache-dependency-path: ${{ matrix.package }}/pnpm-lock.yaml
 
-      - name: Install
-        working-directory: ${{ matrix.package }}
-        run: pnpm install --frozen-lockfile
+      # Build in topological order — every downstream package consumes
+      # `@ai-video/dsl` (and templates') via `link:`, which resolves to
+      # the linked package's dist/ at type-check time. So dsl must
+      # compile before anything that imports it; templates before
+      # renderer + server.
+      - name: Build @ai-video/dsl
+        working-directory: packages/ai-video-dsl
+        run: pnpm install --frozen-lockfile && pnpm build
 
-      - name: Type check
-        working-directory: ${{ matrix.package }}
-        # Each package's `build` script is `tsc` (templates/cli/dsl/server)
-        # or `tsc --noEmit` (renderer). Both cover the type-check.
-        run: pnpm build
+      - name: Build @ai-video/templates
+        working-directory: packages/ai-video-templates
+        run: pnpm install --frozen-lockfile && pnpm build
+
+      - name: Build @ai-video/cli
+        working-directory: packages/ai-video-cli
+        run: pnpm install --frozen-lockfile && pnpm build
+
+      - name: Type-check @ai-video/renderer
+        working-directory: packages/ai-video-renderer
+        # Renderer's build script is `tsc --noEmit` (Remotion runs from src).
+        run: pnpm install --frozen-lockfile && pnpm build
+
+      - name: Build @ai-video/server
+        working-directory: src/server
+        run: pnpm install --frozen-lockfile && pnpm build

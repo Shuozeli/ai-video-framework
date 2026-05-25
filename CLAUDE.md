@@ -87,8 +87,11 @@ gh run list --limit 3
 gh run view <run-id>     # if a run fails
 ```
 
-The CI matrix builds + typechecks all 4 packages and the server in
-parallel on Node 22 / pnpm 10.
+CI builds the 4 packages + server sequentially in topological order
+(dsl → templates → cli → renderer → server) on Node 22 / pnpm 10. Do
+NOT switch to a matrix without first hoisting deps into a workspace —
+`link:` resolution at type-check time requires upstream packages'
+dist/ to exist, which a parallel matrix can't guarantee.
 
 ## Tailscale conventions
 
