@@ -13,6 +13,7 @@ storage/materials/*/
 storage/projects/*/
 test-output/
 demos/*/out/
+demos/showcase/showcase-*.json
 out/
 
 # Logs / temp / OS
