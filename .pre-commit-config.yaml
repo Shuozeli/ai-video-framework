@@ -7,3 +7,14 @@ repos:
       - id: check-yaml
       - id: check-added-large-files
       - id: check-merge-conflict
+
+  - repo: local
+    hooks:
+      - id: no-credentials
+        name: check for leaked credentials
+        # Match yuacx hostnames, cyuan@ user refs, hardcoded LAN IP:port,
+        # and obvious API key formats. Mirrors pwright/.pre-commit-config.yaml.
+        entry: '(?i)(yuacx|docker\.yuacx|cyuan@|10\.0\.0\.\d+:\d+|MINIMAX_API_KEY\s*=\s*[A-Za-z0-9]|sk-cp-[A-Za-z0-9]{6})'
+        language: pygrep
+        types_or: [ts, tsx, javascript, jsx, markdown, yaml, json, shell]
+        exclude: '^\.pre-commit-config\.yaml$'
