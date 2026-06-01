@@ -1,0 +1,4 @@
+allowBuilds:
+  grpc-tools: false
+  highlight.js: false
+  protobufjs: false
